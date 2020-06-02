@@ -10,9 +10,12 @@ import matplotlib.pyplot as plt
 import glob
 import PIL.ExifTags
 import PIL.Image
+import time
 
+s_t=time.clock()
 # Define size of chessboard pattern to be found
-chessboard_size = (7,5)
+# Easy mistake: wrong counting of pattern > count inside intersections of balck squares
+chessboard_size = (9,6)
 
 # Define arrays to save detected points
 obj_points = [] #3D points in real world space 
@@ -25,7 +28,9 @@ objp[:,:2] = np.mgrid[0:chessboard_size[0], 0:chessboard_size[1]].T.reshape(-1,2
 
 #Read Images with glob set
 # TO BE CHANGED LATER ................
-cal_images= glob.glob('/home/sa0102/computer_vision/project/omar_repo/3DReconstruction-master/Calibration/calibration_images/*')
+cal_images= glob.glob('/home/sa0102/computer_vision/project/images/calib_t2/samsung/*.jpg')
+
+succ_count = 0
 
 #Iterate for all images in specified path
 for fname in cal_images:
@@ -38,12 +43,15 @@ for fname in cal_images:
 
     # Find corners with OpenCV library func
     ret, corners = cv.findChessboardCorners(gray, chessboard_size , cv.CALIB_CB_NORMALIZE_IMAGE)
+    #print(ret)
 
     #Criteria for refining found points with subpixel func
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.01)
 
     # If found, add object points, image points (after refining them)
     if ret == True:
+        succ_count = succ_count + 1
+
         obj_points.append(objp)
         
         #Refine with subpixel func
@@ -63,11 +71,11 @@ ret, K, dist, rvecs, tvecs = cv.calibrateCamera(obj_points, img_points, gray.sha
 
 #Save parameters into numpy file
 
-#np.save("/home/sa0102/computer_vision/project/source code/calibration", ret)
+np.save("/home/sa0102/computer_vision/project/source code/calibration/ret", ret)
 np.save("/home/sa0102/computer_vision/project/source code/calibration/K", K)
-#np.save("/home/sa0102/computer_vision/project/source code/calibration", dist)
-#np.save("/home/sa0102/computer_vision/project/source code/calibration", rvecs)
-#np.save("/home/sa0102/computer_vision/project/source code/calibration", tvecs)
+np.save("/home/sa0102/computer_vision/project/source code/calibration/dist", dist)
+np.save("/home/sa0102/computer_vision/project/source code/calibration/rvecs", rvecs)
+np.save("/home/sa0102/computer_vision/project/source code/calibration/tvecs", tvecs)
 
 # Find mean error of re-projection to see how much accuracy we have achieved
 mean_error = 0
@@ -77,5 +85,8 @@ for i in range(len(obj_points)):
     mean_error += error
 print( "total error: {}".format(mean_error/len(obj_points)))
 
-#TO-do: Change image path and store all parameters by uncommenting
+print('Successfully found pattern in {} images'.format(succ_count))
+print('Time taken to process: {} sec'.format(time.clock()-s_t))
+
+# TO-do: Change image path and store all parameters by uncommenting
 # How to store focal length?
